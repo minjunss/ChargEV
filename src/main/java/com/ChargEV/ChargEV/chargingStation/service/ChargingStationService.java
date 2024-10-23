@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -34,8 +36,15 @@ public class ChargingStationService {
     private final GongGongClient gongGongClient;
     private final ChargingStationRepository chargingStationRepository;
 
+
+
     @Transactional
-    public void fetchChargingStation() {
+    public void updateChargingStations() {
+        fetchChargingStation();
+    }
+
+
+    private void fetchChargingStation() {
         log.info("충전소 데이터 패치 시작");
         List<ChargingStation> stationsToSave;
         try (ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor()) {
@@ -103,13 +112,17 @@ public class ChargingStationService {
             executorService.shutdown();
 
             try {
+                // 모든 작업이 완료될 때까지 대기
                 if (!executorService.awaitTermination(5, TimeUnit.MINUTES)) {
                     log.warn("API 작업이 지정된 시간 내에 완료되지 않았습니다.");
+                    executorService.shutdownNow();
                 }
             } catch (InterruptedException e) {
                 log.error("작업 대기 중 인터럽트 발생", e);
+                executorService.shutdownNow();
                 Thread.currentThread().interrupt();
             }
+
         }
         // 데이터베이스에서 기존 충전소를 모두 가져옴
         List<ChargingStation> existingStations = new ArrayList<>();
@@ -185,7 +198,12 @@ public class ChargingStationService {
         // 배치 업데이트 및 삽입
         chargingStationRepository.saveAll(stationsToInsert);
 
-        log.info("충전소 데이터 패치 완료");
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
+            @Override
+            public void afterCommit() {
+                log.info("충전소 데이터 패치 완료");
+            }
+        });
     }
 
 }

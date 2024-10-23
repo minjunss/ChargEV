@@ -17,7 +17,7 @@ public class ChargingStationController {
 
     @GetMapping("/fetch")
     public ResponseEntity fetch() {
-        chargingStationService.fetchChargingStation();
+        chargingStationService.updateChargingStations();
         return ResponseEntity.ok().build();
     }
 
