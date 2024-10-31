@@ -34,4 +34,13 @@ public enum ZCode {
     public String getRegion() {
         return region;
     }
+
+    public static ZCode fromCode(int code) {
+        for (ZCode z : ZCode.values()) {
+            if (z.code == code) {
+                return z;
+            }
+        }
+        throw new IllegalArgumentException("Unknown ZCode: " + code);
+    }
 }

@@ -1,7 +1,11 @@
 package com.ChargEV.ChargEV.chargingStation.service;
 
+import com.ChargEV.ChargEV.chargingStation.domain.ChargerType;
 import com.ChargEV.ChargEV.chargingStation.domain.ChargingStation;
+import com.ChargEV.ChargEV.chargingStation.domain.Stat;
 import com.ChargEV.ChargEV.chargingStation.domain.ZCode;
+import com.ChargEV.ChargEV.chargingStation.dto.ChargingStationByRangeReqDto;
+import com.ChargEV.ChargEV.chargingStation.dto.ChargingStationResDto;
 import com.ChargEV.ChargEV.chargingStation.repository.ChargingStationRepository;
 import com.ChargEV.ChargEV.feignClient.client.GongGongClient;
 import com.google.gson.Gson;
@@ -78,7 +82,7 @@ public class ChargingStationService {
                                         .name(stationObject.get("statNm").getAsString())
                                         .statId(stationObject.get("statId").getAsString())
                                         .chargerId(stationObject.get("chgerId").getAsString())
-                                        .chargerType(stationObject.get("chgerType").getAsString())
+                                        .chargerType(ChargerType.fromCode(stationObject.get("chgerType").getAsString()))
                                         .kind(stationObject.get("kind").getAsString())
                                         .kindDetail(stationObject.get("kindDetail").getAsString())
                                         .limitYn(stationObject.get("limitYn").getAsString())
@@ -90,10 +94,10 @@ public class ChargingStationService {
                                         .latitude(stationObject.get("lat").getAsDouble())
                                         .longitude(stationObject.get("lng").getAsDouble())
                                         .useTime(stationObject.get("useTime").getAsString())
-                                        .stat(stationObject.get("stat").getAsString())
+                                        .stat(Stat.fromCode(stationObject.get("stat").getAsString()))
                                         .output(stationObject.get("output").getAsString())
                                         .method(stationObject.get("method").getAsString())
-                                        .zcode(stationObject.get("zcode").getAsString())
+                                        .zcode(ZCode.fromCode(stationObject.get("zcode").getAsInt()))
                                         .updatedDate(stationObject.get("statUpdDt").getAsString())
                                         .delYn(stationObject.get("delYn").getAsString())
                                         .build();
@@ -204,6 +208,10 @@ public class ChargingStationService {
                 log.info("충전소 데이터 패치 완료");
             }
         });
+    }
+
+    public List<ChargingStationResDto> getChargingStationsByRange(ChargingStationByRangeReqDto reqDto) {
+        return chargingStationRepository.findByCoordinates(reqDto);
     }
 
 }

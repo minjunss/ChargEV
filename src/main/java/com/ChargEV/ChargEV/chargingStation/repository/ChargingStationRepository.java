@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface ChargingStationRepository extends JpaRepository<ChargingStation, Long> {
+public interface ChargingStationRepository extends JpaRepository<ChargingStation, Long>, ChargingStationRepositoryCustom{
     List<ChargingStation> findAllByStatIdInAndChargerIdIn(List<String> statIds, List<String> chargerIds);
 }
