@@ -27,7 +27,7 @@ public class ChargingStationController {
     }
 
     @Operation(summary = "범위 안 충전소 조회", description = "위도, 경도로 범위 안 충전소 조회")
-    @GetMapping("/range")
+    @PostMapping("/range")
     public ResponseEntity<List<ChargingStationResDto>> getChargingStationsByRange(@RequestBody ChargingStationByRangeReqDto reqDto) {
         return ResponseEntity.ok(chargingStationService.getChargingStationsByRange(reqDto));
     }

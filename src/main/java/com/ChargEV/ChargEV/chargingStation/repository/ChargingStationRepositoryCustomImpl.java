@@ -1,5 +1,6 @@
 package com.ChargEV.ChargEV.chargingStation.repository;
 
+import com.ChargEV.ChargEV.chargingStation.domain.KindDetail;
 import com.ChargEV.ChargEV.chargingStation.dto.*;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,8 @@ public class ChargingStationRepositoryCustomImpl implements ChargingStationRepos
                 .where(chargingStation.latitude.between(reqDto.getMinLatitude(), reqDto.getMaxLatitude())
                         .and(chargingStation.longitude.between(reqDto.getMinLongitude(), reqDto.getMaxLongitude()))
                         .and(chargingStation.limitYn.ne("Y"))
-                        .and(chargingStation.delYn.ne("Y")))
+                        .and(chargingStation.delYn.ne("Y"))
+                        .and(chargingStation.kindDetail.in(KindDetail.getDisplayableCodes())))
                 .groupBy(chargingStation.statId)
                 .fetch();
     }
