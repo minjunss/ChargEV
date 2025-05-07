@@ -1,8 +1,6 @@
 package com.ChargEV.ChargEV.chargingStation.repository;
 
-import com.ChargEV.ChargEV.chargingStation.dto.ChargingStationByRangeReqDto;
-import com.ChargEV.ChargEV.chargingStation.dto.ChargingStationResDto;
-import com.ChargEV.ChargEV.chargingStation.dto.QChargingStationResDto;
+import com.ChargEV.ChargEV.chargingStation.dto.*;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 
@@ -36,6 +34,32 @@ public class ChargingStationRepositoryCustomImpl implements ChargingStationRepos
                         .and(chargingStation.limitYn.ne("Y"))
                         .and(chargingStation.delYn.ne("Y")))
                 .groupBy(chargingStation.statId)
+                .fetch();
+    }
+
+    @Override
+    public List<ChargingStationDetailResDto> findByDetailByStatId(String statId) {
+        return jpaQueryFactory
+                .select(new QChargingStationDetailResDto(
+                        chargingStation.name,
+                        chargingStation.statId,
+                        chargingStation.chargerId,
+                        chargingStation.output,
+                        chargingStation.method,
+                        chargingStation.kind,
+                        chargingStation.kindDetail,
+                        chargingStation.address,
+                        chargingStation.location,
+                        chargingStation.note,
+                        chargingStation.limitYn,
+                        chargingStation.limitDetail,
+                        chargingStation.useTime,
+                        chargingStation.updatedDate
+                ))
+                .from(chargingStation)
+                .where(chargingStation.statId.eq(statId)
+                        .and(chargingStation.limitYn.ne("Y")
+                        .and(chargingStation.delYn.ne("Y"))))
                 .fetch();
     }
 }

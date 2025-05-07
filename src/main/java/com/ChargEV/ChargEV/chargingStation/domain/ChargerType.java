@@ -8,7 +8,9 @@ public enum ChargerType {
     DC_CHADEMO_COMBO("05", "DC차데모+DC콤보"),
     DC_CHADEMO_AC_TRIPLE_COMBO("06", "DC차데모+AC3상+DC콤보"),
     AC_TRIPLE("07", "AC3상"),
-    DC_COMBO_SLOW("08", "DC콤보(완속)");
+    DC_COMBO_SLOW("08", "DC콤보(완속)"),
+    NACS("09", "NACS"),
+    DC_COMBO_NACS("10", "DC콤보+NACS");
 
     private final String code;
     private final String description;

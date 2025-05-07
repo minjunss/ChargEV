@@ -5,6 +5,7 @@ import com.ChargEV.ChargEV.chargingStation.domain.ChargingStation;
 import com.ChargEV.ChargEV.chargingStation.domain.Stat;
 import com.ChargEV.ChargEV.chargingStation.domain.ZCode;
 import com.ChargEV.ChargEV.chargingStation.dto.ChargingStationByRangeReqDto;
+import com.ChargEV.ChargEV.chargingStation.dto.ChargingStationDetailResDto;
 import com.ChargEV.ChargEV.chargingStation.dto.ChargingStationResDto;
 import com.ChargEV.ChargEV.chargingStation.repository.ChargingStationRepository;
 import com.ChargEV.ChargEV.feignClient.client.GongGongClient;
@@ -214,4 +215,7 @@ public class ChargingStationService {
         return chargingStationRepository.findByCoordinates(reqDto);
     }
 
+    public List<ChargingStationDetailResDto> getDetail(String statId) {
+        return chargingStationRepository.findByDetailByStatId(statId);
+    }
 }

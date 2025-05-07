@@ -6,7 +6,8 @@ public enum Stat {
     CHARGING("3", "충전중"),
     STOPPED("4", "운영중지"),
     INSPECTION("5", "점검중"),
-    UNKNOWN("9", "상태미확인");
+    UNKNOWN("7", "상태미확인"),
+    UNKNOWN2("9", "상태미확인");
 
     private final String code;
     private final String description;
