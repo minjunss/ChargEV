@@ -4,6 +4,9 @@ import ChargEV.ChargEV.chargingStation.domain.ChargerType;
 import ChargEV.ChargEV.chargingStation.domain.ChargingStation;
 import ChargEV.ChargEV.chargingStation.domain.Stat;
 import ChargEV.ChargEV.chargingStation.domain.ZCode;
+import ChargEV.ChargEV.chargingStation.dto.ChargingStationByRangeReqDto;
+import ChargEV.ChargEV.chargingStation.dto.ChargingStationDetailResDto;
+import ChargEV.ChargEV.chargingStation.dto.ChargingStationResDto;
 import ChargEV.ChargEV.chargingStation.feignClient.GongGongClient;
 import ChargEV.ChargEV.chargingStation.repository.ChargingStationRepository;
 import com.google.gson.Gson;
@@ -198,5 +201,13 @@ public class ChargingStationService {
                 log.info("충전소 데이터 패치 완료: 저장 {}개, 업데이트 {}개", stationToInsert.size(), stationToUpdate.size());
             }
         });
+    }
+
+    public List<ChargingStationResDto> getChargingStationsByRange(ChargingStationByRangeReqDto reqDto) {
+        return chargingStationRepository.findByCoordinates(reqDto);
+    }
+
+    public List<ChargingStationDetailResDto> getDetail(String statId) {
+        return chargingStationRepository.findDetailByStatId(statId);
     }
 }

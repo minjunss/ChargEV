@@ -1,6 +1,10 @@
 package ChargEV.ChargEV.chargingStation.service;
 
+import ChargEV.ChargEV.chargingStation.config.QueryDslConfig;
 import ChargEV.ChargEV.chargingStation.domain.ChargingStation;
+import ChargEV.ChargEV.chargingStation.dto.ChargingStationByRangeReqDto;
+import ChargEV.ChargEV.chargingStation.dto.ChargingStationDetailResDto;
+import ChargEV.ChargEV.chargingStation.dto.ChargingStationResDto;
 import ChargEV.ChargEV.chargingStation.feignClient.GongGongClient;
 import ChargEV.ChargEV.chargingStation.repository.ChargingStationRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,17 +13,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.List;
 
 import static ChargEV.ChargEV.chargingStation.service.TestConstants.MOCK_JSON_RESPONSE_EMPTY;
 import static ChargEV.ChargEV.chargingStation.service.TestConstants.createMockJsonResponse;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
+@Import({QueryDslConfig.class})
 public class ChargingStationServiceTest {
 
     @Autowired
@@ -117,5 +125,73 @@ public class ChargingStationServiceTest {
         // then
         verify(chargingStationRepository, times(1)).findAll();
         verify(chargingStationRepository, times(2)).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("범위 내 충전소 조회 서비스 테스트")
+    void testGetChargingStationsByRange() {
+        // given
+        ChargingStationByRangeReqDto reqDto = ChargingStationByRangeReqDto.builder()
+                .minLatitude(37.5)
+                .maxLatitude(37.6)
+                .minLongitude(127.0)
+                .maxLongitude(127.5)
+                .chargerTypes(List.of("01", "04"))
+                .build();
+
+        ChargingStationResDto expectedStation = new ChargingStationResDto(
+                "강남 충전소",
+                "ST123",
+                "서울시 강남구",
+                "2층 주차장",
+                37.55,
+                "충전기 2대",
+                "N",
+                "",
+                127.45,
+                "24시간",
+                "2025-09-10 12:00",
+                "AVAILABLE"
+        );
+
+        List<ChargingStationResDto> expectedResponse = Collections.singletonList(expectedStation);
+        when(chargingStationRepository.findByCoordinates(reqDto)).thenReturn(expectedResponse);
+
+        // when
+        List<ChargingStationResDto> actualResponse = chargingStationService.getChargingStationsByRange(reqDto);
+
+        // then
+        assertThat(actualResponse).isNotNull()
+                .hasSize(1)
+                .containsExactlyElementsOf(expectedResponse);
+
+        verify(chargingStationRepository, times(1)).findByCoordinates(reqDto);
+    }
+
+    @Test
+    @DisplayName("충전소 상세 조회 서비스 테스트")
+    void testGetDetail() {
+        // given
+        String statId = "ST123";
+        ChargingStationDetailResDto expectedDetail = ChargingStationDetailResDto.builder()
+                .statId(statId)
+                .name("강남 충전소")
+                .address("서울시 강남구")
+                .chargerType("01")
+                .chargerId("CH001")
+                .build();
+
+        List<ChargingStationDetailResDto> expectedResponse = Collections.singletonList(expectedDetail);
+        when(chargingStationRepository.findDetailByStatId(statId)).thenReturn(expectedResponse);
+
+        // when
+        List<ChargingStationDetailResDto> actualResponse = chargingStationService.getDetail(statId);
+
+        // then
+        assertThat(actualResponse).isNotNull()
+                .hasSize(1)
+                .containsExactlyElementsOf(expectedResponse);
+
+        verify(chargingStationRepository, times(1)).findDetailByStatId(statId);
     }
 }
