@@ -1,4 +1,4 @@
-package ChargEV.ChargEV.chargingStation.config;
+package ChargEV.ChargEV.config;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;

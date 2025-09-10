@@ -1,4 +1,4 @@
-package ChargEV.ChargEV.chargingStation.dto;
+package ChargEV.ChargEV.chargingStation.domain;
 
 import java.util.Arrays;
 import java.util.List;

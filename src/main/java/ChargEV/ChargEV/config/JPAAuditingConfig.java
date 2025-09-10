@@ -1,4 +1,4 @@
-package ChargEV.ChargEV.chargingStation.config;
+package ChargEV.ChargEV.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;

@@ -1,11 +1,11 @@
 package ChargEV.ChargEV.chargingStation.service;
 
-import ChargEV.ChargEV.chargingStation.config.QueryDslConfig;
+import ChargEV.ChargEV.config.QueryDslConfig;
 import ChargEV.ChargEV.chargingStation.domain.ChargingStation;
 import ChargEV.ChargEV.chargingStation.dto.ChargingStationByRangeReqDto;
 import ChargEV.ChargEV.chargingStation.dto.ChargingStationDetailResDto;
 import ChargEV.ChargEV.chargingStation.dto.ChargingStationResDto;
-import ChargEV.ChargEV.chargingStation.feignClient.GongGongClient;
+import ChargEV.ChargEV.feignClient.GongGongClient;
 import ChargEV.ChargEV.chargingStation.repository.ChargingStationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

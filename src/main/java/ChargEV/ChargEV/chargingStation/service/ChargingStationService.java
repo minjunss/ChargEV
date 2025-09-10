@@ -7,7 +7,7 @@ import ChargEV.ChargEV.chargingStation.domain.ZCode;
 import ChargEV.ChargEV.chargingStation.dto.ChargingStationByRangeReqDto;
 import ChargEV.ChargEV.chargingStation.dto.ChargingStationDetailResDto;
 import ChargEV.ChargEV.chargingStation.dto.ChargingStationResDto;
-import ChargEV.ChargEV.chargingStation.feignClient.GongGongClient;
+import ChargEV.ChargEV.feignClient.GongGongClient;
 import ChargEV.ChargEV.chargingStation.repository.ChargingStationRepository;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;

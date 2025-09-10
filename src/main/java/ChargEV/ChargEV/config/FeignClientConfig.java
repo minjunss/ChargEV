@@ -1,4 +1,4 @@
-package ChargEV.ChargEV.chargingStation.config;
+package ChargEV.ChargEV.config;
 
 import feign.FeignException;
 import feign.Response;

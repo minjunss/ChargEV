@@ -1,5 +1,6 @@
 package ChargEV.ChargEV.chargingStation.repository;
 
+import ChargEV.ChargEV.chargingStation.domain.KindDetail;
 import ChargEV.ChargEV.chargingStation.dto.*;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;

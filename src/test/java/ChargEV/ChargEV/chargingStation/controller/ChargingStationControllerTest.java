@@ -1,7 +1,7 @@
 package ChargEV.ChargEV.chargingStation.controller;
 
-import ChargEV.ChargEV.chargingStation.config.FeignClientConfig;
-import ChargEV.ChargEV.chargingStation.config.QueryDslConfig;
+import ChargEV.ChargEV.config.FeignClientConfig;
+import ChargEV.ChargEV.config.QueryDslConfig;
 import ChargEV.ChargEV.chargingStation.dto.ChargingStationByRangeReqDto;
 import ChargEV.ChargEV.chargingStation.dto.ChargingStationDetailResDto;
 import ChargEV.ChargEV.chargingStation.dto.ChargingStationResDto;

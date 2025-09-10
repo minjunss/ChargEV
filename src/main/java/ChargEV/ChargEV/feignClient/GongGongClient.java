@@ -1,4 +1,4 @@
-package ChargEV.ChargEV.chargingStation.feignClient;
+package ChargEV.ChargEV.feignClient;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.cloud.openfeign.FeignClientProperties;
