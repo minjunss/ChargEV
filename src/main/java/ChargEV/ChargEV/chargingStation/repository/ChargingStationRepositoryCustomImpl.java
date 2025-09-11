@@ -3,6 +3,7 @@ package ChargEV.ChargEV.chargingStation.repository;
 import ChargEV.ChargEV.chargingStation.domain.KindDetail;
 import ChargEV.ChargEV.chargingStation.dto.*;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.CollectionUtils;
@@ -30,7 +31,8 @@ public class ChargingStationRepositoryCustomImpl implements ChargingStationRepos
                         chargingStation.longitude.min(),
                         chargingStation.useTime.min(),
                         chargingStation.updatedDate.min(),
-                        chargingStation.stat.stringValue().min()
+                        chargingStation.stat.stringValue().min(),
+                        hasAvailableChargerExpression()
                 ))
                 .from(chargingStation)
                 .where(
@@ -78,5 +80,9 @@ public class ChargingStationRepositoryCustomImpl implements ChargingStationRepos
             return null;
         }
         return chargingStation.chargerType.stringValue().in(chargerTypes);
+    }
+
+    private BooleanExpression hasAvailableChargerExpression() {
+        return Expressions.booleanTemplate("MAX(CASE WHEN {0} = '2' THEN 1 ELSE 0 END) = 1", chargingStation.stat.stringValue());
     }
 }

@@ -30,7 +30,7 @@ public class AuthController {
 
     @Operation(summary = "로그인 엔드포인트", description = "OAuth2 code를 받아 로그인 후 상태에 따라 리다이렉트")
     @GetMapping("/signin")
-    public void login(@Parameter(description = "OAuth2 인증코드") @RequestParam String code,
+    public void login(@Parameter(description = "OAuth2 인증코드") @RequestParam("code") String code,
                       HttpServletRequest request,
                       HttpServletResponse response) throws IOException {
         UserInfoResponse userInfoResponse = memberService.signIn(code);

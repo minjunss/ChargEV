@@ -20,9 +20,10 @@ public class ChargingStationResDto {
     private String useTime; //이용가능시간
     private String updatedDate; //상태갱신일시
     private String stat; //충전기 상태
+    private boolean hasAvailableCharger; // 충전 가능한 충전기가 있는지 여부
 
     @QueryProjection
-    public ChargingStationResDto(String name, String statId, String address, String location, Double latitude, String note, String limitYn, String limitDetail, Double longitude, String useTime, String updatedDate, String stat) {
+    public ChargingStationResDto(String name, String statId, String address, String location, Double latitude, String note, String limitYn, String limitDetail, Double longitude, String useTime, String updatedDate, String stat, boolean hasAvailableCharger) {
         this.name = name;
         this.statId = statId;
         this.address = address;
@@ -35,5 +36,6 @@ public class ChargingStationResDto {
         this.useTime = useTime;
         this.updatedDate = updatedDate;
         this.stat = stat;
+        this.hasAvailableCharger = hasAvailableCharger;
     }
 }
