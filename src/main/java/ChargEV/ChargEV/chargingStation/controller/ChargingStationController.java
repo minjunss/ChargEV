@@ -20,7 +20,7 @@ public class ChargingStationController {
     private final ChargingStationService chargingStationService;
 
     @Operation(summary = "충전소 정보 업데이트", description = "충전소 정보 업데이트")
-    @GetMapping("/fetch")
+    @PostMapping("/fetch")
     public ResponseEntity<Void> fetch() {
         chargingStationService.updateChargingStation();
         return ResponseEntity.ok().build();

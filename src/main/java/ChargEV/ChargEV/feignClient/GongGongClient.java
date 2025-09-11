@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 @FeignClient(name = "GongGongClinet", url = "http://apis.data.go.kr/B552584/EvCharger", configuration = FeignClientProperties.FeignClientConfiguration.class)
 public interface GongGongClient {
     @GetMapping("/getChargerInfo")
-    String getChargerInfo(@RequestParam String ServiceKey,
-                          @RequestParam int pageNo,
-                          @RequestParam int numOfRows,
-                          @RequestParam int zcode,
-                          @RequestParam(defaultValue = "JSON") String dataType);
+    String getChargerInfo(@RequestParam("serviceKey") String ServiceKey,
+                          @RequestParam("pageNo") int pageNo,
+                          @RequestParam("numOfRows") int numOfRows,
+                          @RequestParam("zcode") int zcode,
+                          @RequestParam(value = "dataType", defaultValue = "JSON") String dataType);
 }
