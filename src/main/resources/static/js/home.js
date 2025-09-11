@@ -5,6 +5,13 @@
     let openInfoWindow = null;
     let markers = []; // 마커들을 저장할 배열
 
+    // CSRF 토큰과 헤더 이름을 메타 태그에서 읽어오는 함수
+    function getCsrfTokenAndHeader() {
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+        return { token: csrfToken, header: csrfHeader };
+    }
+
     // 마커 아이콘 URL 정의
     const ICONS = {
         GREEN: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
@@ -63,9 +70,15 @@
             chargerTypes: checkedTypes
         };
 
+        // CSRF 토큰 가져오기
+        const csrf = getCsrfTokenAndHeader();
+
         fetch('/api/chargingStation/range', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                [csrf.header]: csrf.token // CSRF 토큰 추가
+            },
             body: JSON.stringify(requestData)
         })
             .then(response => response.json())
@@ -108,8 +121,15 @@
     }
 
     function loadDetail(statId) {
-        fetch(`/api/chargingStation/detail?statId=${statId}`)
-            .then(res => res.json())
+        // CSRF 토큰 가져오기
+        const csrf = getCsrfTokenAndHeader();
+
+        fetch(`/api/chargingStation/detail?statId=${statId}`, {
+            method: 'GET',
+            headers: {
+                [csrf.header]: csrf.token // CSRF 토큰 추가
+            }
+        })
             .then(data => {
                 const html = data.map(d => `
                 <div class="card mb-2">
