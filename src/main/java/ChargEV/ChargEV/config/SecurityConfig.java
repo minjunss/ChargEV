@@ -2,11 +2,13 @@ package ChargEV.ChargEV.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -33,6 +35,9 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(corsConfig -> corsConfig.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/api/**")
+                )
                 .csrf(csrf -> csrf.csrfTokenRepository(new HttpSessionCsrfTokenRepository())) // Use HttpSessionCsrfTokenRepository
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -41,12 +46,15 @@ public class SecurityConfig {
                         authorizeRequests
                                 .requestMatchers("/", "/login", "/signup", "/css/**", "/js/**", "/img/**").permitAll()
                                 .requestMatchers("/api/auth/**", "/api/localSearch/**", "/health", "/api/chargingStation/range", "/api/chargingStation/detail").permitAll()
+                                .requestMatchers("/api/favorites/**").authenticated()
                                 .anyRequest().authenticated())
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")
                         .logoutSuccessUrl("/")
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID"))
+                .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .anonymous(AbstractHttpConfigurer::disable);
         ;
 
         return http.build();

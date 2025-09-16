@@ -2,6 +2,7 @@ package ChargEV.ChargEV.chargingStation.dto;
 
 import com.querydsl.core.annotations.QueryProjection;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -23,6 +24,7 @@ public class ChargingStationResDto {
     private boolean hasAvailableCharger; // 충전 가능한 충전기가 있는지 여부
 
     @QueryProjection
+    @Builder
     public ChargingStationResDto(String name, String statId, String address, String location, Double latitude, String note, String limitYn, String limitDetail, Double longitude, String useTime, String updatedDate, String stat, boolean hasAvailableCharger) {
         this.name = name;
         this.statId = statId;

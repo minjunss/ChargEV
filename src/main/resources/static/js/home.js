@@ -4,6 +4,42 @@
     let debounceTimer = null;
     let openInfoWindow = null;
     let markers = []; // 마커들을 저장할 배열
+    let stationMarkers = new Map(); // statId를 키로 마커와 infoWindow를 저장할 Map
+
+    function onSuccessGeolocation(position) {
+        const userLocation = new naver.maps.LatLng(position.coords.latitude, position.coords.longitude);
+        map = new naver.maps.Map('map', {
+            center: userLocation,
+            zoom: 16,
+            minZoom: 14
+        });
+        // 현재 위치 마커는 그대로 둠 (필터링과 무관)
+        new naver.maps.Marker({
+            position: userLocation,
+            map: map,
+            title: '현재 위치',
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                size: new naver.maps.Size(32, 32),
+                origin: new naver.maps.Point(0, 0),
+                anchor: new naver.maps.Point(16, 32)
+            }
+        });
+        setupIdleListener();
+        setupMapClickToCloseInfoWindow();
+        fetchChargingStationsIfNeeded();
+    }
+
+    function onErrorGeolocation(error) {
+        alert('위치 정보를 가져올 수 없습니다: ' + error.message);
+        map = new naver.maps.Map('map', {
+            center: new naver.maps.LatLng(37.3595704, 127.105399),
+            zoom: 10
+        });
+        setupIdleListener();
+        setupMapClickToCloseInfoWindow();
+        fetchChargingStationsIfNeeded();
+    }
 
     // CSRF 토큰과 헤더 이름을 메타 태그에서 읽어오는 함수
     function getCsrfTokenAndHeader() {
@@ -23,6 +59,7 @@
     function clearMarkers() {
         markers.forEach(marker => marker.setMap(null));
         markers = [];
+        stationMarkers.clear(); // stationMarkers 맵도 초기화
     }
 
     function getMarkerIcon(station) {
@@ -115,23 +152,53 @@
                         infoWindow.open(map, marker);
                         openInfoWindow = infoWindow;
                     });
+
+                    // stationMarkers 맵에 저장
+                    stationMarkers.set(station.statId, { marker: marker, infoWindow: infoWindow });
                 });
             })
             .catch(console.error);
     }
 
-    function loadDetail(statId) {
-        // CSRF 토큰 가져오기
+    function loadDetail(statId, latitude, longitude) {
+        console.log(`loadDetail called with statId: ${statId}, lat: ${latitude}, lng: ${longitude}`); // Debug log
         const csrf = getCsrfTokenAndHeader();
+        const favoriteButton = document.getElementById('favorite-button');
+        const chargerDetailsContainer = document.getElementById('charger-details-container');
+        
+        // 즐겨찾기 버튼 초기화
+        favoriteButton.style.display = 'none'; // 기본적으로 숨김
+        favoriteButton.onclick = null; // 기존 이벤트 리스너 제거
 
+        // 현재 로그인 상태 확인 (body의 data-logged-in 속성 사용)
+        const isLoggedIn = document.body.dataset.loggedIn === 'true';
+        console.log("loadDetail: isLoggedIn =", isLoggedIn);
+
+        // 지도 이동 (새로 추가된 부분)
+        if (latitude && longitude) {
+            const pos = new naver.maps.LatLng(latitude, longitude);
+            map.setCenter(pos);
+            map.setZoom(16); // 적절한 줌 레벨 설정
+
+            // 해당 마커의 infoWindow 열기
+            const stationData = stationMarkers.get(statId);
+            if (stationData) {
+                if (openInfoWindow) openInfoWindow.close();
+                stationData.infoWindow.open(map, stationData.marker);
+                openInfoWindow = stationData.infoWindow;
+            }
+        }
+
+        // 상세 정보 로드
         fetch(`/api/chargingStation/detail?statId=${statId}`, {
             method: 'GET',
             headers: {
-                [csrf.header]: csrf.token // CSRF 토큰 추가
+                [csrf.header]: csrf.token
             }
         })
-            .then(data => {
-                const html = data.map(d => `
+        .then(res => res.json())
+        .then(data => {
+            const html = data.map(d => `
                 <div class="card mb-2">
                     <div class="card-header">
                         충전기 ID: ${d.chargerId}
@@ -145,12 +212,93 @@
                     </div>
                 </div>
             `).join("");
-                const container = document.getElementById("station-detail");
-                container.innerHTML = `<h2>충전기 상세 정보</h2>${html}`;
-                container.style.display = "block";
-                container.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            })
-            .catch(err => alert("상세정보를 불러오는 데 실패했습니다."));
+            
+            chargerDetailsContainer.innerHTML = html;
+            document.getElementById("station-detail").style.display = "block";
+            document.getElementById("station-detail").scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // 로그인된 경우에만 즐겨찾기 버튼 표시 및 상태 확인
+            if (isLoggedIn) {
+                checkFavoriteStatus(statId).then(isFavorited => {
+                    console.log(`Station ${statId} is favorited: ${isFavorited}`); // Debug log
+                    updateFavoriteButton(isFavorited);
+                    favoriteButton.style.display = 'block';
+                    favoriteButton.onclick = () => toggleFavorite(statId, isFavorited);
+                });
+            }
+
+        })
+        .catch(err => alert("상세정보를 불러오는 데 실패했습니다."));
+    }
+
+    // 즐겨찾기 상태 확인 함수
+    async function checkFavoriteStatus(statId) {
+        const csrf = getCsrfTokenAndHeader();
+        try {
+            const response = await fetch(`/api/favorites/check/${statId}`, {
+                method: 'GET',
+                headers: {
+                    [csrf.header]: csrf.token
+                }
+            });
+            if (!response.ok) {
+                // 인증되지 않은 경우 401이 올 수 있음. 이 경우 즐겨찾기 버튼 숨김
+                if (response.status === 401) {
+                    document.getElementById('favorite-button').style.display = 'none';
+                    return false;
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json(); // true 또는 false 반환
+        } catch (error) {
+            console.error("즐겨찾기 상태 확인 중 오류 발생:", error);
+            return false;
+        }
+    }
+
+    // 즐겨찾기 추가/삭제 토글 함수
+    async function toggleFavorite(statId, isFavorited) {
+        const csrf = getCsrfTokenAndHeader();
+        const method = isFavorited ? 'DELETE' : 'POST';
+        const url = `/api/favorites/${statId}`;
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    [csrf.header]: csrf.token
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // 상태 업데이트 후 버튼 UI 변경
+            const newIsFavorited = !isFavorited;
+            updateFavoriteButton(newIsFavorited);
+            document.getElementById('favorite-button').onclick = () => toggleFavorite(statId, newIsFavorited); // 이벤트 리스너 업데이트
+            alert(`즐겨찾기 ${newIsFavorited ? '추가' : '삭제'} 완료!`);
+
+        } catch (error) {
+            console.error("즐겨찾기 토글 중 오류 발생:", error);
+            alert(`즐겨찾기 ${isFavorited ? '삭제' : '추가'} 실패.`);
+        }
+    }
+
+    // 즐겨찾기 버튼 UI 업데이트 함수
+    function updateFavoriteButton(isFavorited) {
+        const favoriteButton = document.getElementById('favorite-button');
+        if (isFavorited) {
+            favoriteButton.innerHTML = '<i class="bi bi-star-fill"></i> 즐겨찾기 삭제';
+            favoriteButton.classList.remove('btn-outline-warning');
+            favoriteButton.classList.add('btn-warning');
+        } else {
+            favoriteButton.innerHTML = '<i class="bi bi-star"></i> 즐겨찾기 추가';
+            favoriteButton.classList.remove('btn-warning');
+            favoriteButton.classList.add('btn-outline-warning');
+        }
     }
 
     function setupIdleListener() {
@@ -169,42 +317,57 @@
         });
     }
 
-    function onSuccessGeolocation(position) {
-        const userLocation = new naver.maps.LatLng(position.coords.latitude, position.coords.longitude);
-        map = new naver.maps.Map('map', {
-            center: userLocation,
-            zoom: 16,
-            minZoom: 14
-        });
-        // 현재 위치 마커는 그대로 둠 (필터링과 무관)
-        new naver.maps.Marker({
-            position: userLocation,
-            map: map,
-            title: '현재 위치',
-            icon: {
-                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-                size: new naver.maps.Size(32, 32),
-                origin: new naver.maps.Point(0, 0),
-                anchor: new naver.maps.Point(16, 32)
-            }
-        });
-        setupIdleListener();
-        setupMapClickToCloseInfoWindow();
-        fetchChargingStationsIfNeeded();
-    }
+    // 즐겨찾기 목록을 로드하고 표시하는 함수
+    async function loadFavorites() {
+        const csrf = getCsrfTokenAndHeader();
+        const favoritesListContainer = document.getElementById('favorites-list-container');
+        const favoritesSection = document.getElementById('favorites-section');
 
-    function onErrorGeolocation(error) {
-        alert('위치 정보를 가져올 수 없습니다: ' + error.message);
-        map = new naver.maps.Map('map', {
-            center: new naver.maps.LatLng(37.3595704, 127.105399),
-            zoom: 10
-        });
-        setupIdleListener();
-        setupMapClickToCloseInfoWindow();
-        fetchChargingStationsIfNeeded();
+        try {
+            const response = await fetch('/api/favorites', {
+                method: 'GET',
+                headers: {
+                    [csrf.header]: csrf.token
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    alert('로그인이 필요합니다.');
+                    window.location.href = '/login'; // 로그인 페이지로 리다이렉트
+                    return;
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const favorites = await response.json();
+
+            if (favorites.length === 0) {
+                favoritesListContainer.innerHTML = '<p>아직 즐겨찾기한 충전소가 없습니다.</p>';
+            } else {
+                const html = favorites.map(fav => `
+                    <div class="card mb-2">
+                        <div class="card-body" onclick="loadDetail('${fav.chargingStation.statId}', ${fav.chargingStation.latitude}, ${fav.chargingStation.longitude})">
+                            <h5 class="card-title">${fav.chargingStation.name}</h5>
+                            <p class="card-text">📍 ${fav.chargingStation.address}</p>
+                            <button class="btn btn-sm btn-outline-danger ms-2" onclick="event.stopPropagation(); toggleFavorite('${fav.chargingStation.statId}', true)">즐겨찾기 삭제</button>
+                        </div>
+                    </div>
+                `).join('');
+                favoritesListContainer.innerHTML = html;
+            }
+            favoritesSection.style.display = 'block'; // 즐겨찾기 섹션 표시
+            favoritesSection.scrollIntoView({ behavior: 'smooth', block: 'start' }); // 스크롤 이동
+        } catch (error) {
+            console.error("즐겨찾기 로드 중 오류 발생:", error);
+            favoritesListContainer.innerHTML = '<p>즐겨찾기 목록을 불러오는 데 실패했습니다.</p>';
+            favoritesSection.style.display = 'block'; // 오류 메시지를 보여주기 위해 섹션 표시
+        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        const isLoggedIn = document.body.dataset.loggedIn === 'true';
+
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(onSuccessGeolocation, onErrorGeolocation);
         } else {
@@ -247,6 +410,32 @@
                     console.error("자동완성 오류", err);
                     resultBox.style.display = "none";
                 });
+        });
+
+        // 로그인 상태에 따라 즐겨찾기 버튼 표시 및 로드
+        if (isLoggedIn) {
+            const sidebarHeader = document.querySelector('.sidebar-header');
+            const favoritesButton = document.createElement('button');
+            favoritesButton.classList.add('btn', 'btn-sm', 'btn-outline-info', 'ms-2');
+            favoritesButton.innerHTML = '<i class="bi bi-star"></i> 내 즐겨찾기';
+            favoritesButton.onclick = () => {
+                const favoritesSection = document.getElementById('favorites-section');
+                if (favoritesSection.style.display === 'none') {
+                    loadFavorites();
+                    favoritesButton.classList.remove('btn-outline-info');
+                    favoritesButton.classList.add('btn-info');
+                } else {
+                    favoritesSection.style.display = 'none';
+                    favoritesButton.classList.remove('btn-info');
+                    favoritesButton.classList.add('btn-outline-info');
+                }
+            };
+            sidebarHeader.querySelector('div').appendChild(favoritesButton);
+        }
+
+        // 상세 정보 닫기 버튼 이벤트 리스너
+        document.getElementById('close-detail-button').addEventListener('click', () => {
+            document.getElementById('station-detail').style.display = 'none';
         });
     });
 

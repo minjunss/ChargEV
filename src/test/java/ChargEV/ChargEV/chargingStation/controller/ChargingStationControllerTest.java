@@ -79,7 +79,8 @@ public class ChargingStationControllerTest {
                 127.45,
                 "24시간",
                 "2025-09-10 12:00",
-                "AVAILABLE"
+                "AVAILABLE",
+                true
         );
 
         List<ChargingStationResDto> expectedResponse = Collections.singletonList(expectedStation);

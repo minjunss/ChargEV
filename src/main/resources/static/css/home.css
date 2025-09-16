@@ -91,6 +91,11 @@ body {
     font-weight: 600;
 }
 
+/* Favorites Section */
+#favorites-section .card-body {
+    cursor: pointer;
+}
+
 /* Autocomplete */
 #autocomplete-results {
     position: absolute;
