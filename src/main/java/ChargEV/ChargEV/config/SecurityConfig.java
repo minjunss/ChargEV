@@ -45,7 +45,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests((authorizeRequests) ->
                         authorizeRequests
                                 .requestMatchers("/", "/login", "/signup", "/css/**", "/js/**", "/img/**").permitAll()
-                                .requestMatchers("/api/auth/**", "/api/localSearch/**", "/health", "/api/chargingStation/range", "/api/chargingStation/detail").permitAll()
+                                .requestMatchers(
+                                        "/api/auth/**",
+                                        "/api/localSearch/**",
+                                        "/health",
+                                        "/api/chargingStation/range", "/api/chargingStation/detail", "/api/chargingStation/fetch").permitAll()
                                 .requestMatchers("/api/favorites/**").authenticated()
                                 .anyRequest().authenticated())
                 .logout(logout -> logout
