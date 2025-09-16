@@ -13,4 +13,12 @@ public interface GongGongClient {
                           @RequestParam("numOfRows") int numOfRows,
                           @RequestParam("zcode") int zcode,
                           @RequestParam(value = "dataType", defaultValue = "JSON") String dataType);
+
+    @GetMapping("/getChargerInfo")
+    String getChargerInfoByStatId(@RequestParam("serviceKey") String ServiceKey,
+                                  @RequestParam(value = "pageNo", defaultValue = "1") int pageNo,
+                                  @RequestParam(value = "numOfRows", defaultValue = "100") int numOfRows,
+                                  @RequestParam("zcode") int zcode,
+                                  @RequestParam("statId") String statId,
+                                  @RequestParam(value = "dataType", defaultValue = "JSON") String dataType);
 }

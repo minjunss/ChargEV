@@ -207,7 +207,86 @@ public class ChargingStationService {
         return chargingStationRepository.findByCoordinates(reqDto);
     }
 
+    @Transactional
     public List<ChargingStationDetailResDto> getDetail(String statId) {
+        List<ChargingStation> stationsInDB = chargingStationRepository.findByStatId(statId);
+        if (stationsInDB.isEmpty()) {
+            throw new NoSuchElementException("해당 충전소 정보를 찾을 수 없습니다: " + statId);
+        }
+        log.info("실시간 정보 조회를 시작합니다. statId: {}", statId);
+
+        ZCode zCode = stationsInDB.getFirst().getZcode();
+        try {
+            String responseBody = gongGongClient.getChargerInfoByStatId(serviceCode, 1, 100, zCode.getCode(), statId, "JSON");
+            JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
+            JsonArray items = Optional.ofNullable(jsonObject.getAsJsonObject("items"))
+                                     .map(obj -> obj.getAsJsonArray("item"))
+                                     .orElse(new JsonArray());
+
+            // statId를 가진 충전기들만 필터링
+            Map<String, JsonObject> liveDataMap = new HashMap<>();
+            for (JsonElement item : items) {
+                JsonObject obj = item.getAsJsonObject();
+                if (obj.get("statId").getAsString().equals(statId)) {
+                    liveDataMap.put(obj.get("chgerId").getAsString(), obj);
+                }
+            }
+
+            // 기존 충전기 정보와 비교하여 업데이트
+            if (!liveDataMap.isEmpty()) {
+                List<ChargingStation> stationsToUpdate = new ArrayList<>();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
+                for (ChargingStation existingStation : stationsInDB) {
+                    JsonObject liveData = liveDataMap.get(existingStation.getChargerId());
+                    if (liveData != null) {
+                        // 업데이트 날짜를 비교하여 최신 정보일 경우에만 업데이트
+                        try {
+                            String liveUpdatedDateStr = liveData.get("statUpdDt").getAsString();
+                            if (liveUpdatedDateStr != null && !liveUpdatedDateStr.isEmpty() &&
+                                (existingStation.getUpdatedDate() == null || existingStation.getUpdatedDate().isEmpty() ||
+                                 LocalDateTime.parse(liveUpdatedDateStr, formatter).isAfter(LocalDateTime.parse(existingStation.getUpdatedDate(), formatter)))) {
+
+                                existingStation.update(
+                                    liveData.get("statNm").getAsString(),
+                                    liveData.get("statId").getAsString(),
+                                    liveData.get("chgerId").getAsString(),
+                                    ChargerType.fromCode(liveData.get("chgerType").getAsString()),
+                                    liveData.get("addr").getAsString(),
+                                    liveData.get("location").getAsString(),
+                                    liveData.get("lat").getAsDouble(),
+                                    liveData.get("note").getAsString(),
+                                    liveData.get("limitYn").getAsString(),
+                                    liveData.get("limitDetail").getAsString(),
+                                    liveData.get("lng").getAsDouble(),
+                                    liveData.get("useTime").getAsString(),
+                                    Stat.fromCode(liveData.get("stat").getAsString()),
+                                    liveData.get("output").getAsString(),
+                                    liveData.get("method").getAsString(),
+                                    liveData.get("kind").getAsString(),
+                                    liveData.get("kindDetail").getAsString(),
+                                    ZCode.fromCode(liveData.get("zcode").getAsInt()),
+                                    liveUpdatedDateStr,
+                                    liveData.get("delYn").getAsString()
+                                );
+                                stationsToUpdate.add(existingStation);
+                            }
+                        } catch (Exception e) {
+                            log.warn("실시간 데이터 파싱 또는 날짜 비교 중 오류 발생 (statId: {}, chargerId: {})", existingStation.getStatId(), existingStation.getChargerId(), e);
+                        }
+                    }
+                }
+                if (!stationsToUpdate.isEmpty()) {
+                    chargingStationRepository.saveAll(stationsToUpdate);
+                    log.info("{}개의 충전기 실시간 정보 업데이트 완료. statId: {}", stationsToUpdate.size(), statId);
+                }
+            }
+        } catch (Exception e) {
+            log.error("공공 API 호출 또는 데이터 처리 중 심각한 오류 발생. statId: {}", statId, e);
+            // API 호출 실패 시에도 DB에 저장된 기존 데이터를 반환
+        }
+
+        // DB에서 다시 조회하여 반환
         return chargingStationRepository.findDetailByStatId(statId);
     }
 }
